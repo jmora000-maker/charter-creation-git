@@ -178,10 +178,10 @@ def send_to_llm(master_context, api_key):
             "content"
         ]  # extract the response text
         clean_ai_output = (
-            raw_ai_output.replace("```json", "").replace("```", "").strip()
+        raw_ai_output.replace("```json", "").replace("```", "").strip()
         )  # remove markdown fences
-        clean_ai_dict = json.loads(clean_ai_output)  # convert to dictionary
-        return clean_ai_dict
+        
+        return clean_ai_output 
     else:
         print(f"DEBUG: API Failed: {response.status_code}")
         raise Exception(f"API Failed: {response.status_code}")
@@ -194,15 +194,26 @@ def save_llm_response(llm_response, llm_response_path):
         logging.info(f"LLM response saved to {llm_response_path}")
         print(f"LLM response saved to {llm_response_path}")
 
-
-# This function will be used to print the LLM response to a text file.
-def print_llm_response(llm_response):
-    with open("llm_response.txt", "w", encoding="utf-8") as f:
-        f.write(json.dumps(llm_response, indent=4))
-        logging.info("LLM response printed to text file.")
-        print("LLM response printed to text file.")
-
-
+#c This function will be used to generate a narrative project charter utilizing LLM json respone
+def generate_project_charter(llm_response, project_charter_path):
+    with open(project_charter_path, "w", encoding="utf-8") as f:
+        f.write(f"Project Title: {llm_response['Project Title']}\n")
+        f.write(f"Executive Summary: {llm_response['Executive Summary']}\n")
+        f.write(f"Strategic Rationale: {llm_response['Strategic Rationale']}\n")
+        f.write(f"Project Purpose: {llm_response['Project Purpose']}\n")
+        f.write(f"Strategic Objectives: {llm_response['Strategic Objectives']}\n")
+        f.write(f"Key Deliverables: {llm_response['Key Deliverables']}\n")
+        f.write(f"High-Level Requirements: {llm_response['High-Level Requirements']}\n")
+        f.write(f"Project Constraints: {llm_response['Project Constraints']}\n")
+        f.write(f"Project Assumptions: {llm_response['Project Assumptions']}\n")
+        f.write(f"Schedule - Milestones: {llm_response['Schedule - Milestones']}\n")
+        f.write(f"Success Criteria: {llm_response['Success Criteria']}\n")
+        f.write(f"High-Level Risks: {llm_response['High-Level Risks']}\n")
+        f.write(f"Budget: {llm_response['Budget']}\n")
+        f.write(f"Stakeholders List: {llm_response['Stakeholders List']}\n"
+                 )
+        
+               
 # This function will be the entry point for the script.
 def main():
     print("Starting script...")
@@ -220,6 +231,9 @@ def main():
     llm_response_name = "llm_response.json"
     llm_response_path = Path("data") / llm_response_name
 
+    project_charter_name = "project_charter.txt"
+    project_charter_path = Path("data") / project_charter_name
+    
     # Build the master context
     logging.info("Building master context...")
     print(f"Building master context from {strategy_filepath} and {project_filepath}...")
@@ -246,20 +260,19 @@ def main():
     logging.info("Sending master context to LLM...")
     print("Sending master context to LLM...")
     llm_response = send_to_llm(master_context, api_key)
+    print(f"LLM response type: {type(llm_response)}")
 
-    # Save the LLM response to a file
+    # Save the LLM response to a json file
     logging.info("Saving LLM response to file...")
     print("Saving LLM response to file...")
     save_llm_response(llm_response, llm_response_path)
 
-    # Print the LLM response to a text file
-    logging.info("Printing LLM response to text file...")
-    print("Printing LLM response to text file...")
-    print_llm_response(llm_response)
-
+    #Create the project charter text file from the LLM response
+    logging.info("Creating project charter...")
+    print("Creating project charter...")
+    generate_project_charter(llm_response_path, project_charter_path)
+    
     logging.info("Script completed successfully.")
-    print("LLM response saved to file.")
-
     print("Script completed successfully.")
 
 
