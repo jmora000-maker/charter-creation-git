@@ -178,10 +178,13 @@ def send_to_llm(master_context, api_key):
             "content"
         ]  # extract the response text
         clean_ai_output = (
-        raw_ai_output.replace("```json", "").replace("```", "").strip()
+            raw_ai_output.replace("```json", "").replace("```", "").strip()
         )  # remove markdown fences
-        
-        return clean_ai_output 
+
+        # FIX: was returning clean_ai_output as a raw string, causing
+        # TypeError: string indices must be integers in generate_project_charter.
+        # Corrected to parse the string into a dict with json.loads() before returning.
+        return json.loads(clean_ai_output)
     else:
         print(f"DEBUG: API Failed: {response.status_code}")
         raise Exception(f"API Failed: {response.status_code}")
