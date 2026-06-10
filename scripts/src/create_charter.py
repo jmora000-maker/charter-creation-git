@@ -270,7 +270,10 @@ def main():
     #Create the project charter text file from the LLM response
     logging.info("Creating project charter...")
     print("Creating project charter...")
-    generate_project_charter(llm_response_path, project_charter_path)
+    # FIX: was passing llm_response_path (a PosixPath) as the first argument,
+    # causing TypeError: 'PosixPath' object is not subscriptable.
+    # Corrected to pass the llm_response dict returned by send_to_llm().
+    generate_project_charter(llm_response, project_charter_path)
     
     logging.info("Script completed successfully.")
     print("Script completed successfully.")
