@@ -198,7 +198,7 @@ def save_llm_response(llm_response, llm_response_path):
 # This function will be used to print the LLM response to a text file.
 def print_llm_response(llm_response):
     with open("llm_response.txt", "w", encoding="utf-8") as f:
-        f.write(llm_response)
+        f.write(json.dumps(llm_response, indent=4))
         logging.info("LLM response printed to text file.")
         print("LLM response printed to text file.")
 
