@@ -44,23 +44,32 @@ import docx
 import pypdf
 import logging
 from pathlib import Path
+import requests
+import os
+import json
 
-
-#Define global variables
+# Define global variables
 log_folder = Path("logs")
 log_folder.mkdir(exist_ok=True)
+
+# Define the API key
+api_key = os.getenv("OPENAI_API_KEY")
+if not api_key:
+    raise ValueError("OPENAI_API_KEY environment variable not set")
+
 
 # This function will route the file to the appropriate extraction function based on the file type.
 def ingest_file(filepath):
     # Determine the file type
-    if filepath.suffix == '.docx':
+    if filepath.suffix == ".docx":
         return extract_from_docx(filepath)
-    elif filepath.suffix == '.pdf':
+    elif filepath.suffix == ".pdf":
         return extract_from_pdf(filepath)
-    elif filepath.suffix == '.txt':
+    elif filepath.suffix == ".txt":
         return extract_from_txt(filepath)
     else:
         return "Unsupported file type."
+
 
 # This function extracts text from a Word document and returns it as a string.
 def extract_from_docx(filepath):
@@ -68,6 +77,7 @@ def extract_from_docx(filepath):
     doc = docx.Document(filepath)
     # We join with a newline to preserve logical document structure
     return "\n".join([p.text for p in doc.paragraphs])
+
 
 # This function extracts text from a PDF document and returns it as a string.
 def extract_from_pdf(filepath):
@@ -79,12 +89,14 @@ def extract_from_pdf(filepath):
         text += page.extract_text() + "\n"
     return text
 
+
 # This function extracts text from a text file and returns it as a string.
 def extract_from_txt(filepath):
     # 'with' ensures the file is safely opened and closed
     with open(filepath, "r", encoding="utf-8") as f:
         # read() pulls the entire file content into a single string
         return f.read()
+
 
 # This function combines the strategy and project inputs into a single context payload.
 def build_master_context(strategy_filepath, project_filepath):
@@ -95,7 +107,7 @@ def build_master_context(strategy_filepath, project_filepath):
         # Harvest the raw data
         strategy_text = ingest_file(strategy_filepath)
         project_text = ingest_file(project_filepath)
-        
+
         # Assemble the master context with clear structural markers
         # These markers help the LLM distinguish between the two sources
         master_context = f"""
@@ -119,12 +131,13 @@ def build_master_context(strategy_filepath, project_filepath):
            - If a specific input is missing (e.g., Budget), state "To be defined" rather than hallucinating a number.
            - Return the result in clean Markdown format.
         """
-        
+
         return master_context
-        
+
     except Exception as e:
         print(f"Error building master context: {e}")
         return None
+
 
 # This function will be used to clean the text data before saving it to a file and sending it to the LLM.
 def clean_text(text):
@@ -132,43 +145,92 @@ def clean_text(text):
     text = " ".join(text.split())
     return text
 
+
 # This function will be used to save the master context to a file.
 def save_master_context(master_context, masterfile_path):
     with open(masterfile_path, "w", encoding="utf-8") as f:
         f.write(master_context)
         logging.info(f"Master context saved to {masterfile_path}")
         print(f"Master context saved to {masterfile_path}")
-            
-# This function will ne used to send the master context to the Gemini LLM
-def send_to_llm(master_context):
-    # Placeholder for the LLM integration code
-    print("Sending to LLM...")
-    print(master_context)
-    return "LLM response"
-    
+
+
+# This functions sends the payload to the OpenAI API with the
+def send_to_llm(master_context, api_key):
+    url = "https://api.openai.com/v1/chat/completions"
+    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
+    prompt = f"""{master_context}"""
+
+    payload = {
+        "model": "gpt-4o-mini",
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are a risk analyst. Return valid JSON only.",
+            },
+            {"role": "user", "content": prompt},
+        ],
+        "temperature": 0.3,
+    }
+
+    response = requests.post(url, headers=headers, json=payload)
+    if response.status_code == 200:
+        raw_ai_output = response.json()["choices"][0]["message"][
+            "content"
+        ]  # extract the response text
+        clean_ai_output = (
+            raw_ai_output.replace("```json", "").replace("```", "").strip()
+        )  # remove markdown fences
+        clean_ai_dict = json.loads(clean_ai_output)  # convert to dictionary
+        return clean_ai_dict
+    else:
+        print(f"DEBUG: API Failed: {response.status_code}")
+        raise Exception(f"API Failed: {response.status_code}")
+
+
+# This function will be used to save the LLM response to a file.
+def save_llm_response(llm_response, llm_response_path):
+    with open(llm_response_path, "w", encoding="utf-8") as f:
+        json.dump(llm_response, f, indent=4)
+        logging.info(f"LLM response saved to {llm_response_path}")
+        print(f"LLM response saved to {llm_response_path}")
+
+
+# This function will be used to print the LLM response to a text file.
+def print_llm_response(llm_response):
+    with open("llm_response.txt", "w", encoding="utf-8") as f:
+        f.write(llm_response)
+        logging.info("LLM response printed to text file.")
+        print("LLM response printed to text file.")
+
+
 # This function will be the entry point for the script.
 def main():
+    print("Starting script...")
 
-    print ("Starting script...")
-    
     # Define the file paths
     strategy_name = "strategy.pdf"
-    strategy_filepath = Path("data")/strategy_name
-    
+    strategy_filepath = Path("data") / strategy_name
+
     project_name = "project_notes.docx"
-    project_filepath = Path("data")/project_name
-    
+    project_filepath = Path("data") / project_name
+
     masterfile_name = "master_context.txt"
-    masterfile_path = Path("data")/masterfile_name
-    
+    masterfile_path = Path("data") / masterfile_name
+
+    llm_response_name = "llm_response.json"
+    llm_response_path = Path("data") / llm_response_name
+
     # Build the master context
-    logging.info ("Building master context...")
+    logging.info("Building master context...")
     print(f"Building master context from {strategy_filepath} and {project_filepath}...")
     master_context = build_master_context(strategy_filepath, project_filepath)
 
-    if master_context:
-        logging.info("Master context built successfully.")
-        print("Master context built successfully.")
+    if not master_context:
+        logging.error("Failed to build master context. Exiting.")
+        print("Failed to build master context. Exiting.")
+        return
+    logging.info("Master context built successfully.")
+    print("Master context built successfully.")
 
     # Clean the master context
     logging.info("Cleaning master context...")
@@ -180,16 +242,32 @@ def main():
     print("Saving master context to file...")
     save_master_context(master_context, masterfile_path)
 
+    # Send the master context to the LLM
+    logging.info("Sending master context to LLM...")
+    print("Sending master context to LLM...")
+    llm_response = send_to_llm(master_context, api_key)
 
-    print ("Script completed successfully.")
-    
-        
+    # Save the LLM response to a file
+    logging.info("Saving LLM response to file...")
+    print("Saving LLM response to file...")
+    save_llm_response(llm_response, llm_response_path)
+
+    # Print the LLM response to a text file
+    logging.info("Printing LLM response to text file...")
+    print("Printing LLM response to text file...")
+    print_llm_response(llm_response)
+
+    logging.info("Script completed successfully.")
+    print("LLM response saved to file.")
+
+    print("Script completed successfully.")
+
 
 # Execute main() if this script is run directly
 if __name__ == "__main__":
-  logging.basicConfig(level=logging.INFO, filename=log_folder/"app.log",
-     format="%(asctime)s - %(levelname)s - %(message)s")
-  main()
-
-
-
+    logging.basicConfig(
+        level=logging.INFO,
+        filename=log_folder / "app.log",
+        format="%(asctime)s - %(levelname)s - %(message)s",
+    )
+    main()
