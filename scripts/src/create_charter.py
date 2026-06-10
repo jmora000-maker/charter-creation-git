@@ -73,6 +73,8 @@ def ingest_file(filepath):
 
 # This function extracts text from a Word document and returns it as a string.
 def extract_from_docx(filepath):
+    logging.info(f"Extracting text from {filepath}")
+    print(f"Extracting text from {filepath}")
     # Load the Word document
     doc = docx.Document(filepath)
     # We join with a newline to preserve logical document structure
@@ -81,6 +83,8 @@ def extract_from_docx(filepath):
 
 # This function extracts text from a PDF document and returns it as a string.
 def extract_from_pdf(filepath):
+    logging.info(f"Extracting text from {filepath}")
+    print(f"Extracting text from {filepath}")
     # Create a PDF reader object
     reader = pypdf.PdfReader(filepath)
     text = ""
@@ -92,17 +96,20 @@ def extract_from_pdf(filepath):
 
 # This function extracts text from a text file and returns it as a string.
 def extract_from_txt(filepath):
+    logging.info(f"Extracting text from {filepath}")
+    print(f"Extracting text from {filepath}")
     # 'with' ensures the file is safely opened and closed
     with open(filepath, "r", encoding="utf-8") as f:
         # read() pulls the entire file content into a single string
         return f.read()
-
 
 # This function combines the strategy and project inputs into a single context payload.
 def build_master_context(strategy_filepath, project_filepath):
     """
     Harvests data from multiple sources and assembles a unified context payload.
     """
+    logging.info("Building master context...")
+    print("Building master context...")
     try:
         # Harvest the raw data
         strategy_text = ingest_file(strategy_filepath)
@@ -125,7 +132,7 @@ def build_master_context(strategy_filepath, project_filepath):
         Create a professional Project Charter. Your output must meet the following criteria:
 
         1. STRATEGIC ALIGNMENT: For every Project Objective, create a section called "Strategic Rationale" that cites the specific company goal from the Strategy document that this objective supports.
-        2. STRUCTURE: Use the following headings: Project Title, Executive Summary, Strategic Rationale, Project Purpose, Strategic Objectives, Key Deliverables, High-Level Requirements, Project Constraints, Project Assumptions, Schedule - Milestones, Success Criteria, High-Level Risks, Budget, and Stakeholders List.
+        2. STRUCTURE: Use the following headings: Executive Summary, Strategic Rationale, Project Purpose, Strategic Objectives, Key Deliverables, High-Level Requirements, Project Constraints, Project Assumptions, Schedule - Milestones, Success Criteria, High-Level Risks, Budget, and Stakeholders List.
         3. CONSTRAINTS: 
            - Keep all descriptions professional and concise.
            - If a specific input is missing (e.g., Budget), state "To be defined" rather than hallucinating a number.
@@ -141,6 +148,8 @@ def build_master_context(strategy_filepath, project_filepath):
 
 # This function will be used to clean the text data before saving it to a file and sending it to the LLM.
 def clean_text(text):
+    logging.info(f"Cleaning text...")
+    print(f"Cleaning text...")
     # Remove extra whitespace and newlines
     text = " ".join(text.split())
     return text
@@ -148,14 +157,16 @@ def clean_text(text):
 
 # This function will be used to save the master context to a file.
 def save_master_context(master_context, masterfile_path):
+    logging.info(f"Saving master context to {masterfile_path}")
+    print(f"Saving master context to {masterfile_path}")
     with open(masterfile_path, "w", encoding="utf-8") as f:
         f.write(master_context)
-        logging.info(f"Master context saved to {masterfile_path}")
-        print(f"Master context saved to {masterfile_path}")
 
 
 # This functions sends the payload to the OpenAI API with the
 def send_to_llm(master_context, api_key):
+    logging.info("Sending master context to LLM...")
+    print("Sending master context to LLM...")
     url = "https://api.openai.com/v1/chat/completions"
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
     prompt = f"""{master_context}"""
@@ -192,33 +203,45 @@ def send_to_llm(master_context, api_key):
 
 # This function will be used to save the LLM response to a file.
 def save_llm_response(llm_response, llm_response_path):
+    logging.info(f"Saving LLM response to {llm_response_path}")
+    print(f"Saving LLM response to {llm_response_path}")
     with open(llm_response_path, "w", encoding="utf-8") as f:
         json.dump(llm_response, f, indent=4)
-        logging.info(f"LLM response saved to {llm_response_path}")
-        print(f"LLM response saved to {llm_response_path}")
+        
 
-#c This function will be used to generate a narrative project charter utilizing LLM json respone
+# This function will be used to generate a narrative project charter utilizing LLM json response.
 def generate_project_charter(llm_response, project_charter_path):
+    logging.info("Generating project charter from LLM response...")
+    print("Generating project charter from LLM response...")
+
+    # FIX: KeyError crashes occurred because the LLM returns keys that don't always
+    # match the hardcoded strings exactly (e.g. capitalisation or spacing differences).
+    # Two changes were made:
+    #   1. Print the actual keys the LLM returned so mismatches are visible in the shell.
+    #   2. Replace direct dict access (llm_response['Key']) with .get('Key', 'To be defined')
+    #      so a missing or differently-named key produces a placeholder instead of a crash.
+    print(f"DEBUG — LLM response keys: {list(llm_response.keys())}")
+
     with open(project_charter_path, "w", encoding="utf-8") as f:
-        f.write(f"Project Title: {llm_response['Project Title']}\n")
-        f.write(f"Executive Summary: {llm_response['Executive Summary']}\n")
-        f.write(f"Strategic Rationale: {llm_response['Strategic Rationale']}\n")
-        f.write(f"Project Purpose: {llm_response['Project Purpose']}\n")
-        f.write(f"Strategic Objectives: {llm_response['Strategic Objectives']}\n")
-        f.write(f"Key Deliverables: {llm_response['Key Deliverables']}\n")
-        f.write(f"High-Level Requirements: {llm_response['High-Level Requirements']}\n")
-        f.write(f"Project Constraints: {llm_response['Project Constraints']}\n")
-        f.write(f"Project Assumptions: {llm_response['Project Assumptions']}\n")
-        f.write(f"Schedule - Milestones: {llm_response['Schedule - Milestones']}\n")
-        f.write(f"Success Criteria: {llm_response['Success Criteria']}\n")
-        f.write(f"High-Level Risks: {llm_response['High-Level Risks']}\n")
-        f.write(f"Budget: {llm_response['Budget']}\n")
-        f.write(f"Stakeholders List: {llm_response['Stakeholders List']}\n"
-                 )
+        f.write(f"Project Title: {llm_response.get('Project Title', 'To be defined')}\n")
+        f.write(f"Executive Summary: {llm_response.get('Executive Summary', 'To be defined')}\n")
+        f.write(f"Strategic Rationale: {llm_response.get('Strategic Rationale', 'To be defined')}\n")
+        f.write(f"Project Purpose: {llm_response.get('Project Purpose', 'To be defined')}\n")
+        f.write(f"Strategic Objectives: {llm_response.get('Strategic Objectives', 'To be defined')}\n")
+        f.write(f"Key Deliverables: {llm_response.get('Key Deliverables', 'To be defined')}\n")
+        f.write(f"High-Level Requirements: {llm_response.get('High-Level Requirements', 'To be defined')}\n")
+        f.write(f"Project Constraints: {llm_response.get('Project Constraints', 'To be defined')}\n")
+        f.write(f"Project Assumptions: {llm_response.get('Project Assumptions', 'To be defined')}\n")
+        f.write(f"Schedule - Milestones: {llm_response.get('Schedule - Milestones', 'To be defined')}\n")
+        f.write(f"Success Criteria: {llm_response.get('Success Criteria', 'To be defined')}\n")
+        f.write(f"High-Level Risks: {llm_response.get('High-Level Risks', 'To be defined')}\n")
+        f.write(f"Budget: {llm_response.get('Budget', 'To be defined')}\n")
+        f.write(f"Stakeholders List: {llm_response.get('Stakeholders List', 'To be defined')}\n")
         
                
 # This function will be the entry point for the script.
 def main():
+    logging.info("Starting script...")
     print("Starting script...")
 
     # Define the file paths
@@ -238,8 +261,6 @@ def main():
     project_charter_path = Path("data") / project_charter_name
     
     # Build the master context
-    logging.info("Building master context...")
-    print(f"Building master context from {strategy_filepath} and {project_filepath}...")
     master_context = build_master_context(strategy_filepath, project_filepath)
 
     if not master_context:
@@ -250,32 +271,18 @@ def main():
     print("Master context built successfully.")
 
     # Clean the master context
-    logging.info("Cleaning master context...")
-    print("Cleaning master context...")
     master_context = clean_text(master_context)
 
     # Save the master context to a file
-    logging.info("Saving master context to file...")
-    print("Saving master context to file...")
     save_master_context(master_context, masterfile_path)
 
     # Send the master context to the LLM
-    logging.info("Sending master context to LLM...")
-    print("Sending master context to LLM...")
     llm_response = send_to_llm(master_context, api_key)
-    print(f"LLM response type: {type(llm_response)}")
 
     # Save the LLM response to a json file
-    logging.info("Saving LLM response to file...")
-    print("Saving LLM response to file...")
     save_llm_response(llm_response, llm_response_path)
 
     #Create the project charter text file from the LLM response
-    logging.info("Creating project charter...")
-    print("Creating project charter...")
-    # FIX: was passing llm_response_path (a PosixPath) as the first argument,
-    # causing TypeError: 'PosixPath' object is not subscriptable.
-    # Corrected to pass the llm_response dict returned by send_to_llm().
     generate_project_charter(llm_response, project_charter_path)
     
     logging.info("Script completed successfully.")

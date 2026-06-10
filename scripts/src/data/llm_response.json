@@ -1,1 +1,76 @@
-"{\n  \"ProjectTitle\": \"Community Engagement Framework Development\",\n  \"ExecutiveSummary\": \"This project aims to develop and implement a department-wide community engagement framework, including a community policing directive, clear standard operating procedures, and ongoing district-level support and guidance. This initiative is essential for strengthening the Community Partnerships Bureau and enhancing trust between the Philadelphia Police Department (PPD) and the communities it serves.\",\n  \"StrategicRationale\": {\n    \"Objective\": \"Develop and implement a department-wide community engagement framework.\",\n    \"SupportingCompanyGoal\": \"Advance Trust with the Community and Partners\"\n  },\n  \"ProjectPurpose\": \"To establish a structured approach for community engagement that fosters trust, enhances communication, and promotes collaborative problem-solving between the PPD and the communities it serves.\",\n  \"StrategicObjectives\": [\n    \"Create a comprehensive community engagement framework.\",\n    \"Implement clear standard operating procedures for community policing.\",\n    \"Enhance district-level support for community engagement initiatives.\"\n  ],\n  \"KeyDeliverables\": [\n    \"Community engagement framework document.\",\n    \"Standard operating procedures for community policing.\",\n    \"Training materials for district personnel on community engagement.\"\n  ],\n  \"HighLevelRequirements\": [\n    \"Engagement with community stakeholders for input and feedback.\",\n    \"Development of training programs for officers on community engagement practices.\",\n    \"Creation of metrics to evaluate the effectiveness of community engagement efforts.\"\n  ],\n  \"ProjectConstraints\": [\n    \"Limited resources for training and implementation.\",\n    \"Potential resistance to change within the department.\",\n    \"Need for alignment with existing policies and procedures.\"\n  ],\n  \"ProjectAssumptions\": [\n    \"Stakeholders will be available and willing to participate in the engagement process.\",\n    \"Sufficient funding will be allocated for training and implementation.\",\n    \"Community members will provide constructive feedback to improve the framework.\"\n  ],\n  \"ScheduleMilestones\": [\n    {\n      \"Milestone\": \"Project Kickoff\",\n      \"Date\": \"Month 1\"\n    },\n    {\n      \"Milestone\": \"Stakeholder Engagement Sessions\",\n      \"Date\": \"Month 2-3\"\n    },\n    {\n      \"Milestone\": \"Draft Framework Development\",\n      \"Date\": \"Month 4-5\"\n    },\n    {\n      \"Milestone\": \"Review and Feedback Period\",\n      \"Date\": \"Month 6\"\n    },\n    {\n      \"Milestone\": \"Final Framework Approval\",\n      \"Date\": \"Month 7\"\n    },\n    {\n      \"Milestone\": \"Training Implementation\",\n      \"Date\": \"Month 8-10\"\n    },\n    {\n      \"Milestone\": \"Framework Launch\",\n      \"Date\": \"Month 11\"\n    },\n    {\n      \"Milestone\": \"Evaluation and Adjustments\",\n      \"Date\": \"Month 12\"\n    }\n  ],\n  \"SuccessCriteria\": [\n    \"Completion of the community engagement framework by the deadline.\",\n    \"Positive feedback from community stakeholders on the engagement process.\",\n    \"Increased participation in community policing initiatives.\"\n  ],\n  \"HighLevelRisks\": [\n    \"Lack of community buy-in could hinder implementation.\",\n    \"Insufficient training may lead to inconsistent application of the framework.\",\n    \"Changes in departmental leadership could impact project continuity.\"\n  ],\n  \"Budget\": \"To be defined\",\n  \"StakeholdersList\": [\n    \"Philadelphia Police Department Leadership\",\n    \"Community Partnerships Bureau\",\n    \"Community Stakeholders\",\n    \"Civic and Business Leaders\",\n    \"Youth Advisory Group\"\n  ]\n}"
+{
+    "Project Charter": {
+        "Executive Summary": "The Philadelphia Police Department (PPD) aims to develop and implement a department-wide community engagement framework to enhance trust and collaboration with the community. This project will establish clear standard operating procedures and ongoing support for district-level engagement, aligning with the PPD's strategic goal of advancing public safety through community partnerships.",
+        "Strategic Rationale": {
+            "Objective": "Develop and implement a department-wide community engagement framework.",
+            "Company Goal": "Advance Trust with the Community and Partners"
+        },
+        "Project Purpose": "To create a structured approach for community engagement that fosters trust, transparency, and collaboration between the PPD and the communities it serves.",
+        "Strategic Objectives": [
+            "Establish a comprehensive community engagement framework.",
+            "Create clear standard operating procedures for community policing.",
+            "Provide ongoing support and guidance to district-level community engagement initiatives."
+        ],
+        "Key Deliverables": [
+            "Community engagement framework document.",
+            "Standard operating procedures for community policing.",
+            "Training materials for district-level officers on community engagement."
+        ],
+        "High-Level Requirements": [
+            "Engagement of community stakeholders in the framework development.",
+            "Training sessions for officers on new procedures.",
+            "Regular feedback mechanisms from community members."
+        ],
+        "Project Constraints": [
+            "Limited resources for training and implementation.",
+            "Potential resistance to change from within the department.",
+            "Need for alignment with existing departmental policies."
+        ],
+        "Project Assumptions": [
+            "Community members will actively participate in the engagement process.",
+            "Officers will be receptive to new training and procedures.",
+            "Sufficient funding will be allocated for project implementation."
+        ],
+        "Schedule - Milestones": [
+            {
+                "Milestone": "Project Kick-off",
+                "Date": "Month 1"
+            },
+            {
+                "Milestone": "Completion of Community Engagement Framework Draft",
+                "Date": "Month 3"
+            },
+            {
+                "Milestone": "Finalization of Standard Operating Procedures",
+                "Date": "Month 6"
+            },
+            {
+                "Milestone": "Training Sessions for Officers",
+                "Date": "Month 9"
+            },
+            {
+                "Milestone": "Project Review and Feedback Collection",
+                "Date": "Month 12"
+            }
+        ],
+        "Success Criteria": [
+            "Increased community participation in engagement activities.",
+            "Positive feedback from community surveys regarding trust and transparency.",
+            "Successful implementation of standard operating procedures across all districts."
+        ],
+        "High-Level Risks": [
+            "Insufficient community engagement leading to ineffective procedures.",
+            "Budget constraints impacting training and implementation.",
+            "Potential pushback from officers resistant to new engagement strategies."
+        ],
+        "Budget": "To be defined",
+        "Stakeholders List": [
+            "Philadelphia Police Department Leadership",
+            "Community Partnerships Bureau",
+            "District-level Officers",
+            "Community Leaders and Advocates",
+            "Civic Organizations",
+            "Youth Advisory Council"
+        ]
+    }
+}
