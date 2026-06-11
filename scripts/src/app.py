@@ -72,7 +72,7 @@ def build_master_context(strategy_text, project_text):
         Your response must enforce semantic harmony, ensuring that individual project variables are explicitly mapped back to the strategic truth of the enterprise layout.
 
         ### STRUCTURE
-        Use the following headings exactly: Project Title, Executive Summary, Strategic Rationale, Project Purpose, Strategic Objectives, Key Deliverables, High-Level Requirements, Project Constraints, Project Assumptions, Schedule - Milestones, Success Criteria, High-Level Risks, Budget, and Stakeholders List.
+        Use the following headings exactly: Project Title, Executive Summary, Strategic Rationale, Project Purpose, Key Deliverables, High-Level Requirements, Project Constraints, Project Assumptions, Schedule - Milestones, Success Criteria, High-Level Risks, Budget, and Stakeholders List.
 
         ### CONSTRAINTS
         - Keep descriptions professional, concise, and focused on maintaining contextual unity.
