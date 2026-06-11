@@ -171,9 +171,10 @@ with col_left:
 
     # Execution Button locks/unlocks based on whether both directory paths exist on the server filesystem
     run_btn = st.button(
-        "🚀 Trigger Charter Synthesis Pipeline", 
+        "Trigger Charter Synthesis Pipeline", 
         disabled=not files_exist, 
-        use_container_width=True
+        use_container_width=True,
+        type="primary"
     )
 
     if not files_exist:
