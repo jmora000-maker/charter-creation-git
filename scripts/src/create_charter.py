@@ -47,8 +47,10 @@ from pathlib import Path
 import requests
 import os
 import json
+from datetime import date
 
 # Define global variables
+today = date.today()
 log_folder = Path("logs")
 log_folder.mkdir(exist_ok=True)
 
@@ -56,7 +58,6 @@ log_folder.mkdir(exist_ok=True)
 api_key = os.getenv("OPENAI_API_KEY")
 if not api_key:
     raise ValueError("OPENAI_API_KEY environment variable not set")
-
 
 # This function will route the file to the appropriate extraction function based on the file type.
 def ingest_file(filepath):
@@ -70,7 +71,6 @@ def ingest_file(filepath):
     else:
         return "Unsupported file type."
 
-
 # This function extracts text from a Word document and returns it as a string.
 def extract_from_docx(filepath):
     logging.info(f"Extracting text from {filepath}")
@@ -79,7 +79,6 @@ def extract_from_docx(filepath):
     doc = docx.Document(filepath)
     # We join with a newline to preserve logical document structure
     return "\n".join([p.text for p in doc.paragraphs])
-
 
 # This function extracts text from a PDF document and returns it as a string.
 def extract_from_pdf(filepath):
@@ -92,7 +91,6 @@ def extract_from_pdf(filepath):
     for page in reader.pages:
         text += page.extract_text() + "\n"
     return text
-
 
 # This function extracts text from a text file and returns it as a string.
 def extract_from_txt(filepath):
@@ -120,40 +118,67 @@ def build_master_context(strategy_filepath, project_filepath):
         master_context = f"""
         ### ROLE
         You are an expert Project Management Consultant with a deep understanding of corporate strategy alignment.
-
-        ### CONTEXT
-        Below is the Company Strategy and the specific Project Inputs.
-        --- COMPANY STRATEGY ---
-        {strategy_text}
-        --- PROJECT INPUTS ---
-        {project_text}
-
+        
         ### TASK
-        Create a professional Project Charter. Your output must meet the following criteria:
+        Today's date is: {today}. Create a professional Project Charter from the COMPANY STRATEGY {strategy_text} and PROJECT INPUTS {project_text}. The Project Charter should synthesize the contextual unity of the strategy. Your output must meet the strict JSON schema below:
+        {{
+          "report_metadata": {{
+            "project_title": "string",
+            "report_date": "string",
+            }},
+          "project_report" {{
+            "executive_summary": "string",
+            "strategic_objective": "string",
+            "project_purpose": "string",
+            "key_deliverables": ["string"],
+            "high_level_requirements": ["string"],
+            "project_constraints": ["string"],
+            "project_assumptions": ["string"],
+            "schedule_milestones": ["string"],
+            "success_criteria": ["string"],
+            "high_level_risks": ["string"],
+            "budget": "string",
+            "stakeholders_list": ["string"],
+            }}         
+           }}
 
-        1. STRATEGIC ALIGNMENT: For every Project Objective, create a section called "Strategic Rationale" that cites the specific company goal from the Strategy document that this objective supports.
-        2. STRUCTURE: Use the following headings: Executive Summary, Strategic Rationale, Project Purpose, Strategic Objectives, Key Deliverables, High-Level Requirements, Project Constraints, Project Assumptions, Schedule - Milestones, Success Criteria, High-Level Risks, Budget, and Stakeholders List.
-        3. CONSTRAINTS: 
-           - Keep all descriptions professional and concise.
-           - If a specific input is missing (e.g., Budget), state "To be defined" rather than hallucinating a number.
-           - Return the result in clean Markdown format.
-        """
-
+        ### FIELD DEFINITIONS
+        * project_title: The name of the strategic objective.
+        * report_date: Today's date.
+        * executive_summary: A 3 - 4 sentence summary of the project.
+        * strategic_objective: The strategic objective the project supports.
+        * project_purpose: A 3 - 4 project purpose of the project.
+        * key_deliverables: Synthesize a list of the key deliverables of the project.
+        * high_level_requirements: Synthesize a list of high-level requirements of the project from the contextual unity of the strategy.
+        * project_constraints: Synthesize a list of project constraints from the contextual unity of the strategy. 
+        * project_assumptions: Synthesize a list of project assumptions from the contextual unity of the strategy.
+        * schedule_milestones: Synthesize a list of schedule milestones and dates from the contextual unity of the strategy. The dates should be in the format Month Day.
+        * success_criteria: Synthesize a list of success criteria from the contextual unity of the strategy. 
+        * high_level_risks: Synthesize a list of high level risks from the contextual unity of the strategy. 
+        * budget: The budget. If one is not provided, state "To be defined."
+        * stakeholders_list: Synthesize a list of the top 5 stakeholders.
+    
+        ### RULES
+        1. Output must be valid JSON.
+        2. Do not include markdown fences.
+        3. Do not include any text before or after the JSON.
+        4. Use exactly the schema and field names provided below.
+        5. If a value is unknown, use an empty string for text fields.
+    
+         """
         return master_context
 
     except Exception as e:
         print(f"Error building master context: {e}")
         return None
 
-
 # This function will be used to clean the text data before saving it to a file and sending it to the LLM.
 def clean_text(text):
-    logging.info(f"Cleaning text...")
-    print(f"Cleaning text...")
+    logging.info(f"Cleaning master content text...")
+    print(f"Cleaning master context text...")
     # Remove extra whitespace and newlines
     text = " ".join(text.split())
     return text
-
 
 # This function will be used to save the master context to a file.
 def save_master_context(master_context, masterfile_path):
@@ -162,8 +187,7 @@ def save_master_context(master_context, masterfile_path):
     with open(masterfile_path, "w", encoding="utf-8") as f:
         f.write(master_context)
 
-
-# This functions sends the payload to the OpenAI API with the
+# This functions sends the payload to the OpenAI API 
 def send_to_llm(master_context, api_key):
     logging.info("Sending master context to LLM...")
     print("Sending master context to LLM...")
@@ -189,55 +213,157 @@ def send_to_llm(master_context, api_key):
             "content"
         ]  # extract the response text
         clean_ai_output = (
-            raw_ai_output.replace("```json", "").replace("```", "").strip()
-        )  # remove markdown fences
-
-        # FIX: was returning clean_ai_output as a raw string, causing
-        # TypeError: string indices must be integers in generate_project_charter.
-        # Corrected to parse the string into a dict with json.loads() before returning.
-        return json.loads(clean_ai_output)
+        raw_ai_output.replace("```json", "").replace("```", "").strip()
+        ) 
+        return clean_ai_output
     else:
         print(f"DEBUG: API Failed: {response.status_code}")
         raise Exception(f"API Failed: {response.status_code}")
-
 
 # This function will be used to save the LLM response to a file.
 def save_llm_response(llm_response, llm_response_path):
     logging.info(f"Saving LLM response to {llm_response_path}")
     print(f"Saving LLM response to {llm_response_path}")
+    # Save json string to a file
     with open(llm_response_path, "w", encoding="utf-8") as f:
-        json.dump(llm_response, f, indent=4)
-        
-
+        f.write(llm_response)
+            
 # This function will be used to generate a narrative project charter utilizing LLM json response.
 def generate_project_charter(llm_response, project_charter_path):
     logging.info("Generating project charter from LLM response...")
     print("Generating project charter from LLM response...")
+    
+    # Convert the JSON string to a Python dictionary
+    llm_response_dict = json.loads(llm_response)
+    
+    # Extract the report values from the dictionary
+    project_metadata=llm_response_dict.get("report_metadata","TBD")
+    project_report=llm_response_dict.get("project_report","TBD")
 
-    # FIX: KeyError crashes occurred because the LLM returns keys that don't always
-    # match the hardcoded strings exactly (e.g. capitalisation or spacing differences).
-    # Two changes were made:
-    #   1. Print the actual keys the LLM returned so mismatches are visible in the shell.
-    #   2. Replace direct dict access (llm_response['Key']) with .get('Key', 'To be defined')
-    #      so a missing or differently-named key produces a placeholder instead of a crash.
-    print(f"DEBUG — LLM response keys: {list(llm_response.keys())}")
+    # Create the project charter text
+    lines =[]
+    
+    lines.append(f"PROJECT CHARTER")
+    project_title = project_metadata.get("project_title", "TBD")
+    lines.append(f"Project: {project_title}")
+    lines.append(f"Report Date: {today}")
+    lines.append("")
 
-    with open(project_charter_path, "w", encoding="utf-8") as f:
-        f.write(f"Project Title: {llm_response.get('Project Title', 'To be defined')}\n")
-        f.write(f"Executive Summary: {llm_response.get('Executive Summary', 'To be defined')}\n")
-        f.write(f"Strategic Rationale: {llm_response.get('Strategic Rationale', 'To be defined')}\n")
-        f.write(f"Project Purpose: {llm_response.get('Project Purpose', 'To be defined')}\n")
-        f.write(f"Strategic Objectives: {llm_response.get('Strategic Objectives', 'To be defined')}\n")
-        f.write(f"Key Deliverables: {llm_response.get('Key Deliverables', 'To be defined')}\n")
-        f.write(f"High-Level Requirements: {llm_response.get('High-Level Requirements', 'To be defined')}\n")
-        f.write(f"Project Constraints: {llm_response.get('Project Constraints', 'To be defined')}\n")
-        f.write(f"Project Assumptions: {llm_response.get('Project Assumptions', 'To be defined')}\n")
-        f.write(f"Schedule - Milestones: {llm_response.get('Schedule - Milestones', 'To be defined')}\n")
-        f.write(f"Success Criteria: {llm_response.get('Success Criteria', 'To be defined')}\n")
-        f.write(f"High-Level Risks: {llm_response.get('High-Level Risks', 'To be defined')}\n")
-        f.write(f"Budget: {llm_response.get('Budget', 'To be defined')}\n")
-        f.write(f"Stakeholders List: {llm_response.get('Stakeholders List', 'To be defined')}\n")
+    # Executive Summary
+    lines.append("EXECUTIVE SUMMARY")
+    lines.append(project_report.get("executive_summary", "TBD"))
+    lines.append("")
+
+    # Strategic Objective
+    lines.append("STRATEGIC OBJECTIVE")
+    lines.append(project_report.get("strategic_objective", "TBD"))
+    lines.append("")
+
+    # Project Purpose
+    lines.append("PROJECT PURPOSE")
+    lines.append(project_report.get("project_purpose", "TBD"))
+    lines.append("")
+
+     # Key Deliverables
+    key_deliverables = project_report.get("key_deliverables", [])
+    lines.append("KEY DELIVERABLES")
+    if key_deliverables:
+        for d in key_deliverables:
+              lines.append(f"- {d}")
+    else:
+        lines.append("No deliverables were identified.")
+    lines.append("")
+
+    # High Level Requirements
+    high_level_requirements = project_report.get("high_level_requirements", [])
+    lines.append("HIGH LEVEL REQUIREMENTS")
+    if high_level_requirements:
+        for r in high_level_requirements:
+            lines.append(f"- {r}")
+    else:
+        lines.append("No requirements were identified.")
+    lines.append("")
         
+    # Project Constraints
+    project_constraints = project_report.get("project_constraints", [])
+    lines.append("PROJECT CONSTRAINTS")
+    if project_constraints:
+        for c in project_constraints:
+            lines.append(f"- {c}")
+    else:
+        lines.append("No constraints were identified.")
+    lines.append("")
+        
+    # Project Assumptions
+    project_assumptions = project_report.get("project_assumptions", [])
+    lines.append("PROJECT ASSUMPTIONS")
+    if project_assumptions:
+        for a in project_assumptions:
+            lines.append(f"- {a}")
+    else:
+        lines.append("No assumptions were identified.")
+    lines.append("")
+
+    # Schedule Milestones
+    schedule_milestones = project_report.get("schedule_milestones", [])
+    lines.append("SCHEDULE MILESTONES")
+    if schedule_milestones:
+        for m in schedule_milestones:
+            lines.append(f"- {m}")
+    else:
+        lines.append("No milestones were identified.")
+    lines.append("")
+
+    # Success Criteria
+    success_criteria = project_report.get("success_criteria", [])
+    lines.append("SUCCESS CRITERIA")
+    if success_criteria:
+        for c in success_criteria:
+            lines.append(f"- {c}")
+    else:
+        lines.append("No success criteria were identified.")
+    lines.append("")
+
+    # High Level Risks
+    high_level_risks = project_report.get("high_level_risks", [])
+    lines.append("HIGH LEVEL RISKS")
+    if high_level_risks:
+        for r in high_level_risks:
+            lines.append(f"- {r}")
+    else:
+        lines.append("No risks were identified.")
+    lines.append("")
+
+    # Budget
+    lines.append("BUDGET")
+    lines.append(project_report.get("budget", "TBD"))
+    lines.append("")
+
+    # Stakeholders List
+    stakeholders_list = project_report.get("stakeholders_list", [])
+    lines.append("STAKEHOLDERS LIST")
+    if stakeholders_list:
+        for s in stakeholders_list:
+            lines.append(f"- {s}")
+    else:
+        lines.append("No stakeholders were identified.")
+    lines.append("")
+
+     # Join all lines with newline characters
+     # Strip any leading or trailing whitespace
+     # Return the final string
+     # This ensures the output is clean and well-formatted
+     # The strip() method removes any extra whitespace at the beginning or end of the string
+     # This is important for consistency and readability
+    
+    return "\n".join(lines).strip()
+
+# This function will be used to save the project charter to a file.
+def save_project_charter(project_charter, project_charter_path):
+        logging.info(f"Saving project charter to {project_charter_path}")
+        print(f"Saving project charter to {project_charter_path}")
+        with open(project_charter_path, "w", encoding="utf-8") as f:
+            f.write(project_charter)
                
 # This function will be the entry point for the script.
 def main():
@@ -281,13 +407,15 @@ def main():
 
     # Save the LLM response to a json file
     save_llm_response(llm_response, llm_response_path)
-
-    #Create the project charter text file from the LLM response
-    generate_project_charter(llm_response, project_charter_path)
     
+    # Generate the project charter
+    project_charter = generate_project_charter(llm_response, project_charter_path)
+
+    # Save the project charter to a file
+    save_project_charter(project_charter, project_charter_path)
+
     logging.info("Script completed successfully.")
     print("Script completed successfully.")
-
 
 # Execute main() if this script is run directly
 if __name__ == "__main__":

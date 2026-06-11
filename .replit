@@ -42,6 +42,7 @@ timeoutMs = 20000
 
 [nix]
 channel = "stable-25_05"
+packages = ["codespelunker"]
 
 [[ports]]
 localPort = 5000
@@ -54,3 +55,7 @@ externalPort = 8080
 [[ports]]
 localPort = 8081
 externalPort = 8081
+
+[[ports]]
+localPort = 8501
+externalPort = 3000
