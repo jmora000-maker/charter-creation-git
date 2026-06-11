@@ -58,14 +58,24 @@ def build_master_context(strategy_text, project_text):
         ### ROLE
         You are an expert Project Management Consultant with a deep understanding of corporate strategy alignment.
 
+        ### CONTEXT
+        Below is the Company Strategy data and the specific Project Inputs.
+        --- COMPANY STRATEGY ---
+        {strategy_text}
+        --- PROJECT INPUTS ---
+        {project_text}
+
         ### TASK
-        Today's date is: {today}. Create a professional Project Charter from the COMPANY STRATEGY {strategy_text} and PROJECT INPUTS {project_text}.
+        Today's date is: {today}. Your primary task is to establish **Contextual Unity** between these documents. 
+        Analyze the macro company milestones alongside the micro project constraints, and synthesize a single, unified, and tightly integrated Project Charter. 
+
+        Your response must enforce semantic harmony, ensuring that individual project variables are explicitly mapped back to the strategic truth of the enterprise layout.
 
         ### STRUCTURE
-        Use the following headings exactly: Project Title, Executive Summary, Strategic Rationale, Project Purpose, Key Deliverables, High-Level Requirements, Project Constraints, Project Assumptions, Schedule - Milestones, Success Criteria, High-Level Risks, Budget, and Stakeholders List.
+        Use the following headings exactly: Project Title, Executive Summary, Strategic Rationale, Project Purpose, Strategic Objectives, Key Deliverables, High-Level Requirements, Project Constraints, Project Assumptions, Schedule - Milestones, Success Criteria, High-Level Risks, Budget, and Stakeholders List.
 
         ### CONSTRAINTS
-        - Keep descriptions professional and concise.
+        - Keep descriptions professional, concise, and focused on maintaining contextual unity.
         - If a specific input is missing (e.g., Budget), state "To be defined" rather than hallucinating text.
         - Return your final result in clean, direct Markdown text.
          """
