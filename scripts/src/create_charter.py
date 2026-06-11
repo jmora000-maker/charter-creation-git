@@ -73,8 +73,8 @@ def ingest_file(filepath):
 
 # This function extracts text from a Word document and returns it as a string.
 def extract_from_docx(filepath):
-    logging.info(f"Extracting text from {filepath}")
-    print(f"Extracting text from {filepath}")
+    logging.info(f"Extracting text from Word file: {filepath}")
+    print(f"Extracting text from Word file: {filepath}")
     # Load the Word document
     doc = docx.Document(filepath)
     # We join with a newline to preserve logical document structure
@@ -82,8 +82,8 @@ def extract_from_docx(filepath):
 
 # This function extracts text from a PDF document and returns it as a string.
 def extract_from_pdf(filepath):
-    logging.info(f"Extracting text from {filepath}")
-    print(f"Extracting text from {filepath}")
+    logging.info(f"Extracting text from PDF file: {filepath}")
+    print(f"Extracting text from PDF file: {filepath}")
     # Create a PDF reader object
     reader = pypdf.PdfReader(filepath)
     text = ""
@@ -94,8 +94,8 @@ def extract_from_pdf(filepath):
 
 # This function extracts text from a text file and returns it as a string.
 def extract_from_txt(filepath):
-    logging.info(f"Extracting text from {filepath}")
-    print(f"Extracting text from {filepath}")
+    logging.info(f"Extracting text from TXT file: {filepath}")
+    print(f"Extracting text from TXT file: {filepath}")
     # 'with' ensures the file is safely opened and closed
     with open(filepath, "r", encoding="utf-8") as f:
         # read() pulls the entire file content into a single string

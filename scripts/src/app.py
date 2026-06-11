@@ -191,7 +191,6 @@ with col_right:
     # Pre-execution placeholder info state
     if "final_charter_text" not in st.session_state:
         charter_placeholder.info("The parsed project charter narrative text will populate here upon synthesis.")
-
 # --- STEP 3: RUNTIME HANDSHAKE WRAPPER ---
 if run_btn and files_exist:
     redirector = StreamlitStdoutRedirector(log_placeholder)
@@ -200,34 +199,40 @@ if run_btn and files_exist:
     with contextlib.redirect_stdout(redirector):
         print("Initializing synthesis lifecycle orchestration...")
 
-        # Parse local filesystem text blocks
-        strategy_raw_text = ingest_file(strategy_filepath)
-        project_raw_text = ingest_file(project_filepath)
+        # Start the visual spinner context wrapper block
+        with st.spinner("Synthesizing corporate strategy documents and mapping variables via LLM pipeline..."):
 
-        # Package and clean text payloads
-        master_payload = build_master_context(strategy_raw_text, project_raw_text)
-        cleaned_payload = clean_text(master_payload)
+            # Parse local filesystem text blocks
+            strategy_raw_text = ingest_file(strategy_filepath)
+            project_raw_text = ingest_file(project_filepath)
 
-        try:
-            # Execute API call transaction
-            final_markdown_charter = send_to_llm(cleaned_payload, api_key)
-            print("\nPipeline complete! Mirroring content structures onto interface...")
+            # Package and clean text payloads
+            master_payload = build_master_context(strategy_raw_text, project_raw_text)
+            cleaned_payload = clean_text(master_payload)
 
-            # --- UPDATE THIS LOGIC BLOCK ---
-            with col_right:
-                # Wiping out markdown formatting to enforce raw plain-text look
-                charter_placeholder.code(final_markdown_charter, language="text")
+            try:
+                # Execute API call transaction (This is what takes time)
+                final_markdown_charter = send_to_llm(cleaned_payload, api_key)
+                print("\nPipeline complete! Mirroring content structures onto interface...")
 
-                # Dynamic Download button 
-                st.download_button(
-                    label="📥 Download Final Charter Text",
-                    data=final_markdown_charter,
-                    file_name=f"Project_Charter_{today}.txt",
-                    mime="text/plain",
-                    use_container_width=True
-                )
-                st.success("Project Charter processed successfully!")
+                # Update the right column layout with data outputs after spinner completes
+                with col_right:
+                    # Wipe previous layout message info state
+                    charter_placeholder.empty()
 
-        except Exception as error_msg:
-            print(f"\nCRITICAL ENGINE ERROR: {error_msg}")
-            st.error(f"Pipeline crashed: {error_msg}")
+                    # Wiping out markdown formatting to enforce raw plain-text look as configured
+                    charter_placeholder.code(final_markdown_charter, language="text")
+
+                    # Dynamic Download button 
+                    st.download_button(
+                        label="📥 Download Final Charter Text",
+                        data=final_markdown_charter,
+                        file_name=f"Project_Charter_{today}.txt",
+                        mime="text/plain",
+                        use_container_width=True
+                    )
+                    st.success("Project Charter processed successfully!")
+
+            except Exception as error_msg:
+                print(f"\nCRITICAL ENGINE ERROR: {error_msg}")
+                st.error(f"Pipeline crashed: {error_msg}")
