@@ -151,15 +151,15 @@ files_exist = strategy_filepath.exists() and project_filepath.exists()
 status_col1, status_col2 = st.columns(2)
 with status_col1:
     if strategy_filepath.exists():
-        st.success(f"✅ Found Strategy Document: `{strategy_filepath}`")
+        st.success(f"✅ Found Strategy Document: `strategy.pdf`")
     else:
-        st.error(f"❌ Missing Target Path: `{strategy_filepath}`")
+        st.error(f"❌ Missing Target Path: `strategy.pdf`")
 
 with status_col2:
     if project_filepath.exists():
-        st.success(f"✅ Found Project Notes: `{project_filepath}`")
+        st.success(f"✅ Found Project Notes: `project_notes.docx`")
     else:
-        st.error(f"❌ Missing Target Path: `{project_filepath}`")
+        st.error(f"❌ Missing Target Path: `project_notes.docx`")
 
 st.markdown("---")
 
