@@ -5,6 +5,20 @@ version = "1.0.0"
 id = "3B4_FFSkEVBkAeYMFRJ2e"
 
 [[services]]
+localPort = 5000
+name = "Streamlit App"
+paths = ["/"]
+
+[services.development]
+run = "streamlit run /home/runner/workspace/scripts/src/app.py --server.port 5000 --server.headless true --server.address 0.0.0.0"
+
+[services.production.run]
+args = ["streamlit", "run", "/home/runner/workspace/scripts/src/app.py", "--server.port", "5000", "--server.headless", "true", "--server.address", "0.0.0.0"]
+
+[services.production.run.env]
+PORT = "5000"
+
+[[services]]
 localPort = 8080
 name = "API Server"
 paths = ["/api"]
