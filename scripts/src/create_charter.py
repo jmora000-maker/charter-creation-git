@@ -124,9 +124,9 @@ def build_master_context(strategy_filepath, project_filepath):
         {{
           "report_metadata": {{
             "project_title": "string",
-            "report_date": "string",
-            }},
-          "project_report" {{
+            "report_date": "string"
+          }},
+          "project_report": {{
             "executive_summary": "string",
             "strategic_objective": "string",
             "project_purpose": "string",
@@ -138,10 +138,9 @@ def build_master_context(strategy_filepath, project_filepath):
             "success_criteria": ["string"],
             "high_level_risks": ["string"],
             "budget": "string",
-            "stakeholders_list": ["string"],
-            }}         
-           }}
-
+            "stakeholders_list": ["string"]
+          }}   
+        }}
         ### FIELD DEFINITIONS
         * project_title: The name of the strategic objective.
         * report_date: Today's date.
