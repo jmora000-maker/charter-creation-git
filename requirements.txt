@@ -1,3 +1,4 @@
+python-docx
 streamlit
 requests
 pandas
