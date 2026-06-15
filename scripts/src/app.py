@@ -12,8 +12,10 @@ import pypdf
 
 # Define paths and global variables
 today = date.today()
+
 current_script_dir=Path(__file__).resolve().parent
-project_root=current_script_dir.parent
+project_root=current_script_dir
+
 input_folder = project_root / "inputs"
 log_folder = project_root / "logs"
 output_folder = project_root / "outputs"
@@ -331,15 +333,16 @@ def run_automated_pipeline(log_placeholder):
     # Target export routing destinations
     api_key = os.environ.get("OPENAI_API_KEY")
     strategy_name = "strategy.pdf"
-    strategy_filepath = Path("data") / strategy_name
     project_name = "project_notes.docx"
-    project_filepath = Path("data") / project_name
-    masterfile_name = "master_context.txt"
-    masterfile_path = Path("data") / masterfile_name
-    llm_response_name = "llm_response.json"
-    llm_response_path = Path("data") / llm_response_name
-    project_charter_name = "project_charter.txt"
-    project_charter_path = Path("data") / project_charter_name
+
+
+    data_dir = project_root / "data"
+
+    strategy_filepath = data_dir / strategy_name
+    project_filepath = data_dir / project_name
+    masterfile_path = data_dir / "master_context.txt"
+    llm_response_path = data_dir / "llm_response.json"
+    project_charter_path = data_dir / "project_charter.txt"
 
     # Pipeline Execution
     try:
@@ -395,9 +398,13 @@ col1, col2 = st.columns(2)
 with col1:
     st.subheader("Control Center")
     strategy_name = "strategy.pdf"
-    strategy_filepath = Path("data") / strategy_name
     project_name = "project_notes.docx"
-    project_filepath = Path("data") / project_name
+
+    # FIX: Use absolute paths here too
+    data_dir = project_root / "data"
+
+    strategy_filepath = data_dir / strategy_name
+    project_filepath = data_dir / project_name
 
     # Provide an informative file validation status display on the interface
     files_exist = strategy_filepath.exists() and project_filepath.exists()
