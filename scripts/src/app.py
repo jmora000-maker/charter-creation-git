@@ -1,117 +1,25 @@
-import docx
-import pypdf
-import logging
-from pathlib import Path
-import requests
 import os
 import json
+import logging
+import requests
+import contextlib              # <--- This fixes the contextlib NameError
 from datetime import date
+from pathlib import Path
+
 import streamlit as st
-import sys
-import io
-import contextlib
+import docx                  # For python-docx
+import pypdf
 
-# Set up Streamlit page layout to wide
-st.set_page_config(layout="wide", page_title="AI Project Charter Generator")
-
+# Define paths and global variables
 today = date.today()
-log_folder = Path("logs")
-log_folder.mkdir(exist_ok=True)
+current_script_dir=Path(__file__).resolve().parent
+project_root=current_script_dir.parent
+input_folder = project_root / "inputs"
+log_folder = project_root / "logs"
+output_folder = project_root / "outputs"
 
-api_key = os.getenv("OPENAI_API_KEY")
-
-# --- DATA INGESTION UTILITIES (Updated to receive Path objects) ---
-
-def ingest_file(filepath: Path):
-    """Routes local path parameters to the matching string harvester."""
-    if filepath.suffix == ".docx":
-        return extract_from_docx(filepath)
-    elif filepath.suffix == ".pdf":
-        return extract_from_pdf(filepath)
-    elif filepath.suffix == ".txt":
-        return extract_from_txt(filepath)
-    else:
-        return "Unsupported file type."
-
-def extract_from_docx(filepath: Path):
-    print(f"Extracting text from Word file: {filepath.name}...")
-    doc = docx.Document(filepath)
-    return "\n".join([p.text for p in doc.paragraphs])
-
-def extract_from_pdf(filepath: Path):
-    print(f"Extracting text from PDF file: {filepath.name}...")
-    reader = pypdf.PdfReader(filepath)
-    text = ""
-    for page in reader.pages:
-        text += page.extract_text() + "\n"
-    return text
-
-def extract_from_txt(filepath: Path):
-    print(f"Extracting text from plain text file: {filepath.name}...")
-    with open(filepath, "r", encoding="utf-8") as f:
-        return f.read()
-
-def build_master_context(strategy_text, project_text):
-    print("Building master context payload...")
-    try:
-        master_context = f"""
-        ### ROLE
-        You are an expert Project Management Consultant with a deep understanding of corporate strategy alignment.
-
-        ### CONTEXT
-        Below is the Company Strategy data and the specific Project Inputs.
-        --- COMPANY STRATEGY ---
-        {strategy_text}
-        --- PROJECT INPUTS ---
-        {project_text}
-
-        ### TASK
-        Today's date is: {today}. Your primary task is to establish **Contextual Unity** between these documents. 
-        Analyze the macro company milestones alongside the micro project constraints, and synthesize a single, unified, and tightly integrated Project Charter. 
-
-        Your response must enforce semantic harmony, ensuring that individual project variables are explicitly mapped back to the strategic truth of the enterprise layout.
-
-        ### STRUCTURE
-        Use the following headings exactly: Project Title, Executive Summary, Strategic Rationale, Project Purpose, Key Deliverables, High-Level Requirements, Project Constraints, Project Assumptions, Schedule - Milestones, Success Criteria, High-Level Risks, Budget, and Stakeholders List.
-
-        ### CONSTRAINTS
-        - Keep descriptions professional, concise, and focused on maintaining contextual unity.
-        - If a specific input is missing (e.g., Budget), state "To be defined" rather than hallucinating text.
-        - Return your final result in clean, direct Markdown text.
-         """
-        return master_context
-    except Exception as e:
-        print(f"Error building master context: {e}")
-        return None
-
-def clean_text(text):
-    print("Cleaning master context string variables...")
-    return " ".join(text.split())
-
-def send_to_llm(master_context, api_key):
-    print("Sending master context out to OpenAI REST endpoint...")
-    url = "https://api.openai.com/v1/chat/completions"
-    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
-
-    payload = {
-        "model": "gpt-4o-mini",
-        "messages": [
-            {"role": "system", "content": "You are a professional PMO Director. Return your response using Markdown headings."},
-            {"role": "user", "content": master_context},
-        ],
-        "temperature": 0.3,
-    }
-
-    response = requests.post(url, headers=headers, json=payload)
-    if response.status_code == 200:
-        return response.json()["choices"][0]["message"]["content"]
-    else:
-        print(f"DEBUG: API Failed: {response.status_code}")
-        raise Exception(f"API Failed: {response.status_code}")
-
-
-# --- STREAMLIT STDOUT CONSOLE CAPTURE REDIRECTOR ---
-
+# --- UTILITY TO CAPTURE STDOUT ---
+# This class redirects standard output to a Streamlit text component in real-time.
 class StreamlitStdoutRedirector:
     def __init__(self, placeholder):
         self.placeholder = placeholder
@@ -124,116 +32,435 @@ class StreamlitStdoutRedirector:
     def flush(self):
         pass
 
+# --- ADD SCRIPT FUNCTIONS HERE ---
 
-# --- STREAMLIT INTERFACE ---
+# This function will route the file to the appropriate extraction function based on the file type.
+def ingest_file(filepath):
+    # Determine the file type
+    if filepath.suffix == ".docx":
+        return extract_from_docx(filepath)
+    elif filepath.suffix == ".pdf":
+        return extract_from_pdf(filepath)
+    elif filepath.suffix == ".txt":
+        return extract_from_txt(filepath)
+    else:
+        return "Unsupported file type."
 
+# This function extracts text from a Word document and returns it as a string.
+def extract_from_docx(filepath):
+    # Load the Word document
+    doc = docx.Document(filepath)
+    # We join with a newline to preserve logical document structure
+    return "\n".join([p.text for p in doc.paragraphs])
+
+# This function extracts text from a PDF document and returns it as a string.
+def extract_from_pdf(filepath):
+    # Create a PDF reader object
+    reader = pypdf.PdfReader(filepath)
+    text = ""
+    # Loop through each page and extract text
+    for page in reader.pages:
+        text += page.extract_text() + "\n"
+    return text
+
+# This function extracts text from a text file and returns it as a string.
+def extract_from_txt(filepath):
+    # 'with' ensures the file is safely opened and closed
+    with open(filepath, "r", encoding="utf-8") as f:
+        # read() pulls the entire file content into a single string
+        return f.read()
+
+
+# This function combines the strategy and project inputs into a single context payload.
+def build_master_context(strategy_filepath, project_filepath):
+    try:
+        # Harvest the raw data
+        strategy_text = ingest_file(strategy_filepath)
+        project_text = ingest_file(project_filepath)
+
+        # Assemble the master context with clear structural markers
+        # These markers help the LLM distinguish between the two sources
+        master_context = f"""
+        ### ROLE
+        You are an expert Project Management Consultant with a deep understanding of corporate strategy alignment.
+
+        ### TASK
+        Today's date is: {today}. Create a professional Project Charter from the COMPANY STRATEGY {strategy_text} and PROJECT INPUTS {project_text}. The Project Charter should synthesize the contextual unity of the strategy. Your output must meet the strict JSON schema below:
+        {{
+          "report_metadata": {{
+            "project_title": "string",
+            "report_date": "string"
+          }},
+          "project_report": {{
+            "executive_summary": "string",
+            "strategic_objective": "string",
+            "project_purpose": "string",
+            "key_deliverables": ["string"],
+            "high_level_requirements": ["string"],
+            "project_constraints": ["string"],
+            "project_assumptions": ["string"],
+            "schedule_milestones": ["string"],
+            "success_criteria": ["string"],
+            "high_level_risks": ["string"],
+            "budget": "string",
+            "stakeholders_list": ["string"]
+          }}   
+        }}
+        ### FIELD DEFINITIONS
+        * project_title: The name of the strategic objective.
+        * report_date: Today's date.
+        * executive_summary: A 3 - 4 sentence summary of the project.
+        * strategic_objective: The strategic objective the project supports.
+        * project_purpose: A 3 - 4 project purpose of the project.
+        * key_deliverables: Synthesize a list of the key deliverables of the project.
+        * high_level_requirements: Synthesize a list of high-level requirements of the project from the contextual unity of the strategy.
+        * project_constraints: Synthesize a list of project constraints from the contextual unity of the strategy. 
+        * project_assumptions: Synthesize a list of project assumptions from the contextual unity of the strategy.
+        * schedule_milestones: Synthesize a list of schedule milestones and dates from the contextual unity of the strategy. The dates should be in the format Month Day.
+        * success_criteria: Synthesize a list of success criteria from the contextual unity of the strategy. 
+        * high_level_risks: Synthesize a list of high level risks from the contextual unity of the strategy. 
+        * budget: The budget. If one is not provided, state "To be defined."
+        * stakeholders_list: Synthesize a list of the top 5 stakeholders.
+
+        ### RULES
+        1. Output must be valid JSON.
+        2. Do not include markdown fences.
+        3. Do not include any text before or after the JSON.
+        4. Use exactly the schema and field names provided below.
+        5. If a value is unknown, use an empty string for text fields.
+
+         """
+        return master_context
+
+    except Exception as e:
+        print(f"Error building master context: {e}")
+        return None
+
+
+# This function will be used to clean the text data before saving it to a file and sending it to the LLM.
+def clean_text(text):
+    # Remove extra whitespace and newlines
+    text = " ".join(text.split())
+    return text
+
+
+# This function will be used to save the master context to a file.
+def save_master_context(master_context, masterfile_path):
+    with open(masterfile_path, "w", encoding="utf-8") as f:
+        f.write(master_context)
+
+
+# This functions sends the payload to the OpenAI API
+def send_to_llm(master_context, api_key):
+    url = "https://api.openai.com/v1/chat/completions"
+    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
+    prompt = f"""{master_context}"""
+
+    payload = {
+        "model": "gpt-4o-mini",
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are a risk analyst. Return valid JSON only.",
+            },
+            {"role": "user", "content": prompt},
+        ],
+        "temperature": 0.3,
+    }
+
+    response = requests.post(url, headers=headers, json=payload)
+    if response.status_code == 200:
+        raw_ai_output = response.json()["choices"][0]["message"][
+            "content"
+        ]  # extract the response text
+        clean_ai_output = (
+            raw_ai_output.replace("```json", "").replace("```", "").strip()
+        )
+        return clean_ai_output
+    else:
+        print(f"DEBUG: API Failed: {response.status_code}")
+        raise Exception(f"API Failed: {response.status_code}")
+
+
+# This function will be used to save the LLM response to a file.
+def save_llm_response(llm_response, llm_response_path):
+    # Save json string to a file
+    with open(llm_response_path, "w", encoding="utf-8") as f:
+        f.write(llm_response)
+
+
+# This function will be used to generate a narrative project charter utilizing LLM json response.
+def generate_project_charter(llm_response):
+
+    # Convert the JSON string to a Python dictionary
+    llm_response_dict = json.loads(llm_response)
+
+    # Extract the report values from the dictionary
+    project_metadata = llm_response_dict.get("report_metadata", "TBD")
+    project_report = llm_response_dict.get("project_report", "TBD")
+
+    # Create the project charter text
+    lines = []
+
+    lines.append(f"PROJECT CHARTER")
+    project_title = project_metadata.get("project_title", "TBD")
+    lines.append(f"Project: {project_title}")
+    lines.append(f"Report Date: {today}")
+    lines.append("")
+
+
+    # Executive Summary
+    lines.append("EXECUTIVE SUMMARY")
+    lines.append(project_report.get("executive_summary", "TBD"))
+    lines.append("")
+
+    # Strategic Objective
+    lines.append("STRATEGIC OBJECTIVE")
+    lines.append(project_report.get("strategic_objective", "TBD"))
+    lines.append("")
+
+    # Project Purpose
+    lines.append("PROJECT PURPOSE")
+    lines.append(project_report.get("project_purpose", "TBD"))
+    lines.append("")
+
+    # Key Deliverables
+    key_deliverables = project_report.get("key_deliverables", [])
+    lines.append("KEY DELIVERABLES")
+    if key_deliverables:
+        for d in key_deliverables:
+            lines.append(f"- {d}")
+    else:
+        lines.append("No deliverables were identified.")
+    lines.append("")
+
+    # High Level Requirements
+    high_level_requirements = project_report.get("high_level_requirements", [])
+    lines.append("HIGH LEVEL REQUIREMENTS")
+    if high_level_requirements:
+        for r in high_level_requirements:
+            lines.append(f"- {r}")
+    else:
+        lines.append("No requirements were identified.")
+    lines.append("")
+
+    # Project Constraints
+    project_constraints = project_report.get("project_constraints", [])
+    lines.append("PROJECT CONSTRAINTS")
+    if project_constraints:
+        for c in project_constraints:
+            lines.append(f"- {c}")
+    else:
+        lines.append("No constraints were identified.")
+    lines.append("")
+
+    # Project Assumptions
+    project_assumptions = project_report.get("project_assumptions", [])
+    lines.append("PROJECT ASSUMPTIONS")
+    if project_assumptions:
+        for a in project_assumptions:
+            lines.append(f"- {a}")
+    else:
+        lines.append("No assumptions were identified.")
+    lines.append("")
+
+    # Schedule Milestones
+    schedule_milestones = project_report.get("schedule_milestones", [])
+    lines.append("SCHEDULE MILESTONES")
+    if schedule_milestones:
+        for m in schedule_milestones:
+            lines.append(f"- {m}")
+    else:
+        lines.append("No milestones were identified.")
+    lines.append("")
+
+    # Success Criteria
+    success_criteria = project_report.get("success_criteria", [])
+    lines.append("SUCCESS CRITERIA")
+    if success_criteria:
+        for c in success_criteria:
+            lines.append(f"- {c}")
+    else:
+        lines.append("No success criteria were identified.")
+    lines.append("")
+
+    # High Level Risks
+    high_level_risks = project_report.get("high_level_risks", [])
+    lines.append("HIGH LEVEL RISKS")
+    if high_level_risks:
+        for r in high_level_risks:
+            lines.append(f"- {r}")
+    else:
+        lines.append("No risks were identified.")
+    lines.append("")
+
+    # Budget
+    lines.append("BUDGET")
+    lines.append(project_report.get("budget", "TBD"))
+    lines.append("")
+
+    # Stakeholders List
+    stakeholders_list = project_report.get("stakeholders_list", [])
+    lines.append("STAKEHOLDERS LIST")
+    if stakeholders_list:
+        for s in stakeholders_list:
+            lines.append(f"- {s}")
+    else:
+        lines.append("No stakeholders were identified.")
+    lines.append("")
+
+    # Join all lines with newline characters
+    # Strip any leading or trailing whitespace
+    # Return the final string
+    # This ensures the output is clean and well-formatted
+    # The strip() method removes any extra whitespace at the beginning or end of the string
+    # This is important for consistency and readability
+
+    return "\n".join(lines).strip()
+
+
+# This function will be used to save the project charter to a file.
+def save_project_charter(project_charter, project_charter_path):
+    with open(project_charter_path, "w", encoding="utf-8") as f:
+        f.write(project_charter)
+
+
+# --- CORE PIPELINE EXECUTION WRAPPER ---
+def run_automated_pipeline(log_placeholder):
+
+    # Target export routing destinations
+    api_key = os.environ.get("OPENAI_API_KEY")
+    strategy_name = "strategy.pdf"
+    strategy_filepath = Path("data") / strategy_name
+    project_name = "project_notes.docx"
+    project_filepath = Path("data") / project_name
+    masterfile_name = "master_context.txt"
+    masterfile_path = Path("data") / masterfile_name
+    llm_response_name = "llm_response.json"
+    llm_response_path = Path("data") / llm_response_name
+    project_charter_name = "project_charter.txt"
+    project_charter_path = Path("data") / project_charter_name
+
+    # Pipeline Execution
+    try:
+        print("PIPELINE STARTED.")
+
+        # Ingest files
+        strategy_raw_text = ingest_file(strategy_filepath)
+        project_raw_text = ingest_file(project_filepath)
+        print("STEP #1: Project documents ingested.")
+
+        # Package and clean text payloads
+        # Change this inside run_automated_pipeline:
+        master_payload = build_master_context(strategy_filepath, project_filepath)
+        print("STEP #2: Master context built.")
+
+        cleaned_payload = clean_text(master_payload)
+        print("STEP #3: Master context cleaned.")
+
+        # Send the master context to the LLM
+        print("STEP #4: Sending master context to OpenAI.")
+        print("Please wait a few moments...")
+        llm_response = send_to_llm(cleaned_payload, api_key)
+
+        # FIX #1: Removed the extra path argument here
+        project_charter = generate_project_charter(llm_response)
+
+        # FIX #2: Pass BOTH variables to the saving function in the correct order
+        save_project_charter(project_charter, project_charter_path)
+        print("STEP #5: Project Charter completed.")
+
+        print("PIPELINE COMPLETED.")
+        return project_charter
+
+    except Exception as e:
+        st.error(f"Pipeline crashed with an unhandled traceback exception: {e}")
+        logging.error(f"Streamlit runtime pipeline execution failure: {e}", exc_info=True)
+        return None
+
+
+# --- STREAMLIT UI CONFIGURATION ---
+st.set_page_config(
+    page_title="AI Project Charter Generator",
+    layout="wide"
+)
+
+# APPLICATION TITLE
 st.title("Automated Project Charter Dashboard")
-st.caption("Synchronizing target workspace documents from the local directory parameters.")
-
-if not api_key:
-    st.error("🔑 Environment variable `OPENAI_API_KEY` missing. Please configure it to run.")
-    st.stop()
-
-# --- STEP 1: DEFINE LOCAL TARGET WORKSPACE DIRECTORIES ---
-
-# Replace your previous path declarations with this resilient look-up:
-current_working_dir = Path(__file__).resolve().parent
-data_directory = current_working_dir / "data"
-
-strategy_filepath = data_directory / "strategy.pdf"
-project_filepath = data_directory / "project_notes.docx"
-
-st.subheader("1. System Configuration & Workspace Audit")
-
-# Provide an informative file validation status display on the interface
-files_exist = strategy_filepath.exists() and project_filepath.exists()
-
-status_col1, status_col2 = st.columns(2)
-with status_col1:
-    if strategy_filepath.exists():
-        st.success(f"✅ Found Strategy Document: `strategy.pdf`")
-    else:
-        st.error(f"❌ Missing Target Path: `strategy.pdf`")
-
-with status_col2:
-    if project_filepath.exists():
-        st.success(f"✅ Found Project Notes: `project_notes.docx`")
-    else:
-        st.error(f"❌ Missing Target Path: `project_notes.docx`")
-
 st.markdown("---")
 
-# --- STEP 2: SPLIT WORKSPACE INTERFACE COLUMNS ---
-col_left, col_right = st.columns([1, 1])
+# Split dashboard workspace view evenly into two layout control blocks
+col1, col2 = st.columns(2)
 
-with col_left:
-    st.subheader("2. Control Center")
+with col1:
+    st.subheader("Control Center")
+    strategy_name = "strategy.pdf"
+    strategy_filepath = Path("data") / strategy_name
+    project_name = "project_notes.docx"
+    project_filepath = Path("data") / project_name
 
-    # Execution Button locks/unlocks based on whether both directory paths exist on the server filesystem
-    run_btn = st.button(
-        "Trigger Charter Synthesis Pipeline", 
-        disabled=not files_exist, 
-        use_container_width=True,
-        type="primary"
-    )
+    # Provide an informative file validation status display on the interface
+    files_exist = strategy_filepath.exists() and project_filepath.exists()
+    if strategy_filepath.exists():
+        st.text(f"Found Strategy Document: `strategy.pdf`")
+    else:
+        st.text(f"Missing Target Path: `strategy.pdf`")
+    if project_filepath.exists():
+        st.text(f"Found Project Notes: `project_notes.docx`")
+    else:
+        st.text(f"Missing Target Path: `project_notes.docx`")
 
-    if not files_exist:
-        st.warning("The execution button is locked. Please ensure files are saved in the `data/` path.")
+    # Core system action trigger interface button
+    start_pipeline = st.button("Generate Project Charter", use_container_width=True, type="primary")
 
-    st.markdown("**Live Operational Console Logs:**")
-    log_placeholder = st.empty()
-    log_placeholder.code("System Engine Idle. Awaiting execution pipeline launch...", language="text")
+    st.subheader("Pipeline Summary")
+    # Interactive log tracing viewport block
+    console_logs = st.empty()
+    console_logs.info("Click 'Generate Project Charter' button to begin.")
 
+# Persistent frame layout setup for Column 2 immediately on boot
+with col2:
+    st.subheader("Executive Synthesis Workspace")
+    report_placeholder = st.empty()
 
-with col_right:
-    st.subheader("3. Executive Synthesis Workspace")
-    charter_placeholder = st.empty()
+    # Pre-execution placeholder info state setup
+    report_placeholder.info("The Project Charter will populate here upon synthesis.")
 
-    # Pre-execution placeholder info state
-    if "final_charter_text" not in st.session_state:
-        charter_placeholder.info("The parsed project charter narrative text will populate here upon synthesis.")
-# --- STEP 3: RUNTIME HANDSHAKE WRAPPER ---
-if run_btn and files_exist:
-    redirector = StreamlitStdoutRedirector(log_placeholder)
+# Active process handler evaluations
+if start_pipeline:
+    redirector = StreamlitStdoutRedirector(console_logs)
 
-    # Intercept print statements and mirror them directly to the Streamlit layout box
-    with contextlib.redirect_stdout(redirector):
-        print("Initializing synthesis lifecycle orchestration...")
+    with st.spinner("Processing contextual synthesis..."):
+        # Wrap the stream interceptor strictly around the pipeline engine call
+        with contextlib.redirect_stdout(redirector):
+            final_narrative = run_automated_pipeline(console_logs)
 
-        # Start the visual spinner context wrapper block
-        with st.spinner("Synthesizing corporate strategy documents and mapping variables via LLM pipeline..."):
+    if final_narrative:
+        with col2:
+            # Overwrite the initial info alert box inside the locked workspace column element
+            report_placeholder.markdown(
+                f"""
+                <div style="
+                    background-color: #1e293b; 
+                    color: #f8fafc; 
+                    padding: 20px; 
+                    border-radius: 8px; 
+                    height: 550px; 
+                    overflow-y: scroll; 
+                    white-space: pre-wrap; 
+                    font-family: monospace;
+                    border: 1px solid #334155;
+                    line-height: 1.5;
+                ">{final_narrative}</div>
+                """,
+                unsafe_allow_html=True
+            )
 
-            # Parse local filesystem text blocks
-            strategy_raw_text = ingest_file(strategy_filepath)
-            project_raw_text = ingest_file(project_filepath)
-
-            # Package and clean text payloads
-            master_payload = build_master_context(strategy_raw_text, project_raw_text)
-            cleaned_payload = clean_text(master_payload)
-
-            try:
-                # Execute API call transaction (This is what takes time)
-                final_markdown_charter = send_to_llm(cleaned_payload, api_key)
-                print("\nPipeline complete! Mirroring content structures onto interface...")
-
-                # Update the right column layout with data outputs after spinner completes
-                with col_right:
-                    # Wipe previous layout message info state
-                    charter_placeholder.empty()
-
-                    # Wiping out markdown formatting to enforce raw plain-text look as configured
-                    charter_placeholder.code(final_markdown_charter, language="text")
-
-                    # Dynamic Download button 
-                    st.download_button(
-                        label="📥 Download Final Charter Text",
-                        data=final_markdown_charter,
-                        file_name=f"Project_Charter_{today}.txt",
-                        mime="text/plain",
-                        use_container_width=True
-                    )
-                    st.success("Project Charter processed successfully!")
-
-            except Exception as error_msg:
-                print(f"\nCRITICAL ENGINE ERROR: {error_msg}")
-                st.error(f"Pipeline crashed: {error_msg}")
+            # Native browser download button widget asset mapping final strings out of RAM memory
+            st.download_button(
+                label="Download Project Charter (.txt)",
+                data=final_narrative,
+                file_name="project_charter.txt",
+                mime="text/plain",
+                use_container_width=True
+            )
