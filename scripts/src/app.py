@@ -132,6 +132,7 @@ def build_master_context(strategy_filepath, project_filepath):
         5. If a value is unknown, use an empty string for text fields.
 
          """
+        print(" -> Master Context built")
         return master_context
 
     except Exception as e:
@@ -143,6 +144,7 @@ def build_master_context(strategy_filepath, project_filepath):
 def clean_text(text):
     # Remove extra whitespace and newlines
     text = " ".join(text.split())
+    print(f" -> Master context cleaned")
     return text
 
 
@@ -178,6 +180,7 @@ def send_to_llm(master_context, api_key):
         clean_ai_output = (
             raw_ai_output.replace("```json", "").replace("```", "").strip()
         )
+        print(" -> Report data extracted from LLM response.")
         return clean_ai_output
     else:
         print(f"DEBUG: API Failed: {response.status_code}")
@@ -193,6 +196,8 @@ def save_llm_response(llm_response, llm_response_path):
 
 # This function will be used to generate a narrative project charter utilizing LLM json response.
 def generate_project_charter(llm_response):
+
+    print(f" -> Performing automated report generation.")
 
     # Convert the JSON string to a Python dictionary
     llm_response_dict = json.loads(llm_response)
@@ -349,29 +354,31 @@ def run_automated_pipeline(log_placeholder):
         print("PIPELINE STARTED.")
 
         # Ingest files
+        print("STEP #1: Ingesting project files.")
         strategy_raw_text = ingest_file(strategy_filepath)
         project_raw_text = ingest_file(project_filepath)
-        print("STEP #1: Project documents ingested.")
+
 
         # Package and clean text payloads
         # Change this inside run_automated_pipeline:
+        print("STEP #2: Building master context.")
         master_payload = build_master_context(strategy_filepath, project_filepath)
-        print("STEP #2: Master context built.")
 
+        print("STEP #3: Cleaning master context.")
         cleaned_payload = clean_text(master_payload)
-        print("STEP #3: Master context cleaned.")
+
 
         # Send the master context to the LLM
         print("STEP #4: Sending master context to OpenAI.")
-        print("Please wait a few moments...")
+        print(" -> Please wait a few moments...")
         llm_response = send_to_llm(cleaned_payload, api_key)
 
         # FIX #1: Removed the extra path argument here
+        print("STEP #5: Generating Project Charter.")
         project_charter = generate_project_charter(llm_response)
 
         # FIX #2: Pass BOTH variables to the saving function in the correct order
         save_project_charter(project_charter, project_charter_path)
-        print("STEP #5: Project Charter completed.")
 
         print("PIPELINE COMPLETED.")
         return project_charter
@@ -389,14 +396,14 @@ st.set_page_config(
 )
 
 # APPLICATION TITLE
-st.title("Automated Project Charter Dashboard")
+st.title("Project Charter Dashboard")
 st.markdown("---")
 
 # Split dashboard workspace view evenly into two layout control blocks
 col1, col2 = st.columns(2)
 
 with col1:
-    st.subheader("Control Center")
+    st.subheader("System Configuration")
     strategy_name = "strategy.pdf"
     project_name = "project_notes.docx"
 
@@ -427,7 +434,7 @@ with col1:
 
 # Persistent frame layout setup for Column 2 immediately on boot
 with col2:
-    st.subheader("Executive Synthesis Workspace")
+    st.subheader("Report Workspace")
     report_placeholder = st.empty()
 
     # Pre-execution placeholder info state setup
