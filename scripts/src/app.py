@@ -397,6 +397,7 @@ st.set_page_config(
 
 # APPLICATION TITLE
 st.title("Project Charter Dashboard")
+st.caption("Deterministic contextual mapping to translate high-level corporate vision into aligned, execution-ready delivery frameworks.")
 st.markdown("---")
 
 # Split dashboard workspace view evenly into two layout control blocks

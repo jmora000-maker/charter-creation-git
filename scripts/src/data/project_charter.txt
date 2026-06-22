@@ -1,63 +1,64 @@
 PROJECT CHARTER
-Project: Department-wide Community Engagement Framework Development
-Report Date: 2026-06-16
+Project: Develop and Implement a Department-Wide Community Engagement Framework
+Report Date: 2026-06-22
 
 EXECUTIVE SUMMARY
-This project aims to develop and implement a comprehensive community engagement framework for the Philadelphia Police Department. The framework will establish clear standard operating procedures and ongoing support for district-level community policing efforts. By fostering stronger relationships with community stakeholders, the Department seeks to enhance trust and collaboration.
+This project aims to establish a comprehensive community engagement framework for the Philadelphia Police Department. It will enhance communication and collaboration between the police and the community, fostering trust and transparency. The initiative will involve the development of standard operating procedures and ongoing support for district-level engagement efforts.
 
 STRATEGIC OBJECTIVE
 Advance Trust with the Community and Partners
 
 PROJECT PURPOSE
-The purpose of this project is to create a structured approach to community engagement that promotes transparency, responsiveness, and inclusivity in police-community interactions. This will help build lasting relationships and improve public safety outcomes.
+The purpose of this project is to create a structured approach to community engagement that aligns with the Department's goals of building trust and legitimacy. It will ensure consistent and effective communication and engagement practices across all districts.
 
 KEY DELIVERABLES
 - Community engagement framework document
 - Standard operating procedures for community policing
-- Training materials for district-level officers
-- Implementation timeline and action plan
-- Feedback mechanisms for community input
+- Training materials for district-level personnel
+- Implementation plan for ongoing support and evaluation
 
 HIGH LEVEL REQUIREMENTS
-- Involvement of community stakeholders in the framework development
-- Alignment with departmental goals and community needs
-- Training for officers on new engagement practices
-- Establishment of metrics for evaluating engagement effectiveness
+- Involvement of community stakeholders in the development process
+- Alignment with existing departmental policies and practices
+- Training for officers on community engagement techniques
+- Regular feedback mechanisms from community members
 
 PROJECT CONSTRAINTS
-- Limited resources for training and implementation
-- Potential resistance from officers to new procedures
-- Time constraints for community feedback and adjustments
+- Limited budget for training and resources
+- Potential resistance to change within the department
+- Need for alignment with other ongoing initiatives
+- Time constraints for implementation within the strategic plan timeline
 
 PROJECT ASSUMPTIONS
-- Community stakeholders will be willing to participate in the process
-- Sufficient funding will be allocated for training and resources
-- Officers will embrace the new community engagement strategies
+- Community stakeholders will actively participate in the process
+- Department personnel will be receptive to new engagement strategies
+- Sufficient resources will be allocated for training and implementation
+- The framework will be adaptable to changing community needs
 
 SCHEDULE MILESTONES
-- Framework draft completion: August 15
-- Stakeholder review and feedback: September 30
-- Final framework approval: October 15
-- Training sessions for officers: November 1 - November 30
-- Implementation start date: December 1
+- Framework development completion by September 2026
+- Training sessions for district personnel by November 2026
+- Initial implementation of the framework by January 2027
+- Evaluation and feedback collection by March 2027
 
 SUCCESS CRITERIA
 - Increased community participation in engagement activities
-- Positive feedback from community surveys on police transparency
-- Reduction in community complaints related to police interactions
-- Improved officer engagement scores in departmental surveys
+- Positive feedback from community surveys regarding police transparency
+- Improved perceptions of police legitimacy in community feedback
+- Successful implementation of standard operating procedures across all districts
 
 HIGH LEVEL RISKS
-- Failure to engage community stakeholders effectively
-- Inadequate training leading to inconsistent implementation
-- Negative public perception if initial rollout is poorly received
+- Lack of community engagement leading to ineffective implementation
+- Insufficient training resulting in inconsistent application of the framework
+- Potential backlash from community members if expectations are not met
+- Changes in leadership affecting project continuity
 
 BUDGET
 To be defined.
 
 STAKEHOLDERS LIST
-- Police Commissioner
-- Deputy Commissioner of Community Partnerships
-- Community Engagement Bureau Director
-- Local Community Leaders
-- City Council Public Safety Committee
+- Kevin J. Bethel, Police Commissioner
+- Community Partnerships Bureau
+- Local community leaders
+- Department training officers
+- Civic Coalition to Save Lives
